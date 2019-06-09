@@ -16,6 +16,7 @@ import {
     NativeModules,
     AppState,
     Platform,
+    PermissionsAndroid
 } from 'react-native'
 
 const BarcodeManager = Platform.OS == 'ios' ? NativeModules.Barcode : NativeModules.CaptureModule
@@ -33,17 +34,6 @@ export default class Barcode extends Component {
         scannerRectCornerColor: `#09BB0D`,
     }
 
-    static propTypes = {
-        ...View.propTypes,
-        onBarCodeRead: PropTypes.func.isRequired,
-        barCodeTypes: PropTypes.array,
-        scannerRectWidth: PropTypes.number,
-        scannerRectHeight: PropTypes.number,
-        scannerRectTop: PropTypes.number,
-        scannerRectLeft: PropTypes.number,
-        scannerLineInterval: PropTypes.number,
-        scannerRectCornerColor: PropTypes.string,
-    }
 
     render() {
         return (
@@ -55,13 +45,32 @@ export default class Barcode extends Component {
 
     componentDidMount() {
         AppState.addEventListener('change', this._handleAppStateChange);
+        this.startScan();
     }
     componentWillUnmount() {
         AppState.removeEventListener('change', this._handleAppStateChange);
     }
 
+
+    requestCameraPermission = async () => {
+        if(Platform.OS === "ios") return true;
+        try {
+          const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+           return true
+          } else {
+            return false
+          }
+        } catch (err) {
+            return false
+        }
+    }
+
     startScan() {
-        BarcodeManager.startSession()
+        this.requestCameraPermission().then(allowed=>{
+            allowed && BarcodeManager.startSession();
+        }).catch(e=>alert(e))
+        
     }
 
     stopScan() {
